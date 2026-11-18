@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Usage and configuration questions
+    url: https://github.com/echoingme/cis2hdl_dsn_ver/blob/main/README.md
+    about: Installation, profiles, pipeline.yaml fields and the CLI are documented in the README.
+  - name: Architecture and matching documentation
+    url: https://github.com/echoingme/cis2hdl_dsn_ver/tree/main/docs
+    about: DSN parsing model, intermediate representation, and the six match routing outcomes.

@@ -1,0 +1,180 @@
+# =============================================================================
+# pipeline.yaml — CIS2HDL 转换配置（权威）
+# 设计依据：docs/S1-config-design.md（§4）；上游 docs/archive/temp files/
+#           phase23-plugin-architecture.md §3.6/§3.7
+# 铁律：default profile 与当前基线（Phase XXIII, 929 passed）行为完全等价
+# 加载顺序：pipeline.yaml（权威）→ --profile 覆盖 → 路径类 CLI 参数覆盖
+#           （--output/--hdl-lib/--extra-hdl-lib；S10 起旧行为参数已移除）
+# =============================================================================
+schema_version: 1          # 配置结构版本（导入校验用；低版本缺失字段用默认值）
+
+profile: default           # 当前生效 profile：default | fast | max-beauty | match-only | <自定义>
+                           # 自定义 profile 存 profiles/<name>.yaml（ProfileManager 管理）
+
+# ── 输入段：库路径 + 输入插件组合 ───────────────────────────────────────────
+input:
+  hdl_lib: ""              # 主 HDL 元件库路径（--hdl-lib；相对路径按当前工作目录解析，与旧 CLI 一致）
+  extra_hdl_libs: []       # 附加 HDL 库（--extra-hdl-lib，可多个）
+  plugins:                 # FR1 输入插件组合（DSN 唯一；EDIF/PST/CrossRef 已归档 _retired）
+    - dsn                  # DSN 解析（唯一输入源，DSN 为唯一信息源铁律）
+
+# ── 匹配段：插件组合 + 权重 + prefix 范围 + 阈值 + mock + 手动干预 ─────────
+match:
+  plugins: [exact, fuzzy, passive, fallback]   # FR2 匹配插件链（S4 驱动）
+  weights:                 # 匹配权重（NFR5 去硬编码；S4 接入 matcher）
+                           # S4 对齐：默认 = ActiveMatcher.WITHIN_TYPE_WEIGHTS
+                           # （S1 占位权重与真实 matcher 不一致，直接应用会
+                           #  破坏 FR9 默认等价，故 S4 修正）
+    footprint: 0.30
+    value: 0.15
+    jedec: 0.20
+    pin_count: 0.20
+    part_name: 0.15
+  prefix_scope:            # 各 prefix 搜索范围（S4 接入）
+                           # S4 对齐：默认空 = 不限制候选范围（FR9 默认等价；
+                           #  S1 占位示例若直接应用会收窄候选库）。显式配置后
+                           #  生效（FR2）：{prefix: [关键字, ...]}，并集语义
+                           #  见 developer-guide S4 章节
+    {}
+  thresholds:              # = ComponentMatchingConfig 四阈值（S4 接入）
+    exact: 0.95
+    fuzzy: 0.75
+    feature: 0.60
+    fallback: 0.50
+  mock:                    # FR3 强制 mock
+    prefixes: [J, T]
+    auto_icon: true        # J/T/U/IC 用模拟图标（temp_lib.mock_all 后端兜底）
+  manual_overrides:        # FR3 手动匹配（--chip-config 主入口 / --manual-matches 别名）
+    file: ""               # chip_config.yaml 路径（空 = 不启用）
+    export_unmatched: ""   # 未匹配导出路径（--export-unmatched；空 = 不导出）
+
+# ── 美化段：插件组合（S2 驱动）+ 参数（RoutingConfig 原样承载，S1 即生效）──
+beautify:
+  plugins:                 # FR4 美化插件组合——DSN 直通模式全部关闭
+    # 布线/美化已随 DSN 直通移除（可直接读取 DSN 原始布线坐标，
+    # 无需自动布线/聚类/化简；对应模块已归档 _retired/writer/）
+    - []
+  params:                  # ★ 与旧 routing.yaml 同构（字段 = RoutingConfig 全量）
+    routing:               # 布线器参数（旧 routing: 节）
+      mode: dsn            # DSN 直通（走线用 DSN 原始折线，不布线；detour/edif_reuse 已归档）
+      lane_pitch: 50
+      grid: 25
+      detour_stubs: true
+      use_edif_wires: false
+      cross_page_opt: false
+      fallback_to_p0: true
+      nonuniform_tracks: false   # --nonuniform-tracks
+      net_order: "long_first"    # long_first | short_first（--net-order）
+      stub_lead: 100
+      lead_differentiate: true
+      lead_diff_min_gap: 75
+      max_detour: 50
+      edge_clearance: 100
+      three_stage_stub: true
+      stub_always_lead: true   # Phase XXVII：所有 stub 先延伸再拐弯（U6H 引脚）
+    text_layout:           # D1 文本/标签去冲突（--text-layout 置 enabled）
+      enabled: true        # Phase XXVII：默认开（V9 全标签避让是基本要求）
+      align_net_names: true
+      align_ports: true
+      diff_pair_pn: true
+      char_width_factor: 0.65
+      line_height_factor: 1.2
+      padding: 12
+      min_text_w: 75
+    overlap:               # D2 元件重叠检测 + R5 避让（--aesthetic 置 check）
+      check: true          # Phase XXVII：默认开（防重叠检测）
+      min_area: 625
+      auto_placement: false
+      resolve: true
+      avoid_margin: 50
+      edge_clearance: 100
+      pin_avoid_radius: 50
+      pin_avoid: true      # Phase XXVI（F5）：避让区=边框+引脚+外延（Phase XXVII 默认开）
+    power_ic:              # D4 电源芯片匹配（--power-ic / --aesthetic）
+      enabled: false
+      config_file: "cis2hdl/config/power_ic.yaml"
+    aesthetic:             # 总开关（--aesthetic；启用时联动多处，见 §5 映射）
+      enabled: false
+      report: true
+    report:                # 诊断报告输出（--no-report 置 always_write=false）
+      always_write: true
+      aesthetic: true
+      ioport_audit: true
+    placeholder:           # P0-F 占位符号（默认 true 是用户要求的例外）
+      enabled: true
+    ioport:                # P1-C 跨页 IOPORT + M5 网络名（--ioport-edge/--ioport-audit/--use-net-name）
+      edge_layout: true    # Phase XXVII：默认开（IO port 不得堆右上角）
+      edge_x: -600
+      edge_step: 100
+      edge_margin: 300
+      audit: false
+      skip_orphan: false
+      manual_names: {}
+      use_net_name: true   # Phase XXVII：默认开（网络名替代 IO port，用户 D2/A1）
+      net_label_on_end: true
+      un_name_policy: "rename"   # keep | rename | omit
+    mirror:                # T1 镜像归一化（--no-mirror-normalize 置 normalize=false）
+      normalize: true
+      report: true
+    gnd_distribution:      # P1-D GND 符号分布（--gnd-distribute 置 enabled+distribute_density）
+      enabled: true        # Phase XXVII：默认开（GND 聚类/分布是基本要求）
+      distribute_density: true
+      near_chip_offset: 100
+      distance_threshold: 2000
+      max_per_chip: 1
+      dense_area_threshold: 8
+      cluster_radius: 2000
+      parallel_short: true
+      parallel_short_dist: 1000   # Phase XXVII：500→1000（信号端并联更积极）
+      gnd_power_lastpin_offset: [0, 50]
+    temp_lib:              # M1 模拟图标（默认 true；false 回退 placeholder）
+      enabled: true
+      lib_name: temp_lib
+      annotate: true
+      mock_text: "MOCK/模拟图标"
+      pin_font_size: 16
+      pin_text_size: 16
+      pin_line_len: 50
+      mock_text_cmd: "T"
+      mock_all: true
+      syntax_check: true
+      structure_check: true
+    wire_simplify:         # M4 电线化简（Phase XXVII：默认开，用户裁决"布线简化是基本要求"）
+      enabled: true
+      dot_merge: 50
+      max_wire_len: 5000
+      break_long: false    # 已删除断口标签逻辑（A2），字段保留兼容
+      self_intersect_check: true
+      parallel_short: true
+      parallel_short_dist: 1000   # Phase XXVII：500→1000（信号端并联更积极）
+    pin_audit:             # M6 引脚连接审计（只读诊断）
+      enabled: true
+      report_hanging: true
+    attribute:             # R4 属性注入
+      inject_crossref: true
+      rewrite_origin: true
+    matching:              # R4/Q1 + R10 匹配源过滤
+      hdl_lib_only: true
+      connector_pin_check: true
+    placement:             # R11/Q12 元件微调 + Phase XXVI 旋转开关
+      max_passive_move: 200
+      rotate_passives: false   # deprecated（V2，不再读取）
+      sym2_switch: true        # sym_2 视图切换（默认 true=现状；false 还原 CIS 方向）
+      label_rotation_bind: true  # Phase XXVII：默认开（V3 标签随元件旋转）
+    net_name:              # R3⑤ UN$ 稳定化
+      un_auto_rename: true
+
+# ── 输出段：文件/报告选择（S6 驱动；S1 承载/校验/查重）────────────────────
+output:
+  files: [csa, con, xcon, csv, cpc, cpm, cds_lib]     # FR5 输出文件（S6 驱动）
+  reports: [aesthetic, ioport, mapping, error]        # 报告（report 开关见 beautify.params.report）
+
+# ── 测试段：测试套件选择（S8 驱动）────────────────────────────────────────
+test:
+  suites: [unit, e2e, qa_package]                     # FR6 测试插件（S8 驱动）
+
+# ── 运行段：引擎运行参数（--output/--max-workers/--benchmark 落点）────────
+engine:
+  output_dir: "output"     # 输出目录（--output）
+  max_workers: 4           # 并行度（--max-workers）
+  benchmark: false         # 性能基准报告（--benchmark）

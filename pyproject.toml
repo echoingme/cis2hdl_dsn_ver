@@ -1,0 +1,88 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cis2hdl"
+dynamic = ["version"]
+description = "OrCAD Capture CIS to Cadence Design Entry HDL Schematic Converter (DSN edition)"
+readme = "README.md"
+requires-python = ">=3.12"
+license = {text = "MIT"}
+authors = [{name = "Zhichen Rao", email = "eerzcrzcrzc@mail.scut.edu.cn"}]
+keywords = [
+    "eda",
+    "orcad",
+    "capture-cis",
+    "concept-hdl",
+    "design-entry-hdl",
+    "dsn",
+    "schematic-converter",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Electronic Design Automation (EDA)",
+]
+
+[project.urls]
+Homepage = "https://github.com/echoingme/cis2hdl_dsn_ver"
+Repository = "https://github.com/echoingme/cis2hdl_dsn_ver"
+Documentation = "https://github.com/echoingme/cis2hdl_dsn_ver/tree/main/docs"
+Changelog = "https://github.com/echoingme/cis2hdl_dsn_ver/blob/main/CHANGELOG.md"
+Issues = "https://github.com/echoingme/cis2hdl_dsn_ver/issues"
+Upstream = "https://github.com/echoingme/CIS2HDL_plugin_ver"
+
+# 依赖与 requirements.txt 对齐（2026-09-01 更新）：
+#   - olefile/openpyxl 为 dsn_ver 必需（DSN OLE 解析 / BOM xlsx 输出）
+#   - sexpdata 仅 tests/_archive 旧测试使用，已移除
+dependencies = [
+    "pydantic>=2.0",
+    "pyside6>=6.5",
+    "rapidfuzz>=3.0",
+    "pyyaml>=6.0",
+    "pluggy>=1.5",
+    "olefile>=0.47",
+    "openpyxl>=3.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.3",
+    "mypy>=1.8",
+    "pyinstaller>=6.0",
+]
+
+[project.scripts]
+cis2hdl = "cis2hdl.__main__:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "cis2hdl.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["cis2hdl*"]
+exclude = ["tests*", "docs*", "scripts*", "profiles*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM"]
+
+[tool.mypy]
+strict = true
+python_version = "3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]

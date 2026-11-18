@@ -1,0 +1,33 @@
+# profiles/debug.yaml — 内置只读 profile（全开调试）
+# 说明：所有美化功能全部打开（旋转感知/电线化简/文字排版/GND 分布/三段式）+ 全插件
+#       + 全报告 + 全测试；routing.mode=p0（DSN 直通）。params 为相对 default 的增量。
+# 用途：视觉测试/调试排障——一次看到所有美化效果（用户 S11 要求：debug profile 全开）。
+schema_version: 1
+profile:
+  name: debug
+  description: "全开调试：DSN 直通 + 全插件 + 全报告 + 全测试（布线美化已归档）"
+  builtin: true
+  plugins:
+    input:    [dsn]
+    match:    [exact, fuzzy, passive, fallback]
+    beautify: []  # DSN 直通，布线美化已归档
+    output:   [csa, con, xcon, csv, cpc, cpm, cds_lib]
+    test:     [unit, e2e, qa_package]
+  output:
+    files:    [csa, con, xcon, csv, cpc, cpm, cds_lib]
+    reports:  [aesthetic, ioport, mapping, error]
+  params:
+    routing:                    # 布线器：DSN 直通
+      mode: p0  # DSN 直通（detour 已归档）
+    placement:                  # Phase XXVI：删除 rotate_passives（V2）；
+                                # sym2_switch=false 还原 CIS 方向（V2/V3）；
+                                # label_rotation_bind=true 标签随元件旋转
+      sym2_switch: false
+      label_rotation_bind: true
+    ioport:                     # Phase XXVI（V5）：网络名替代 IO port
+      use_net_name: true
+      edge_layout: true
+    report:
+      always_write: true
+      aesthetic: true
+      ioport_audit: true

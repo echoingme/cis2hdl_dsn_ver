@@ -1,0 +1,85 @@
+# profiles/default.yaml — 内置只读 profile（Phase XXVII 起：新权威基线）
+# 说明：Phase XXVII 用户裁决 A1 —— default 开启全部基本美化（IO port 移除
+#       /GND 聚类+分布/布线简化/并联增强/标签方向绑定/三段式 stub）成为新
+#       权威基线。params 显式声明（ProfileManager.get("default") 以本文件
+#       为准，不受 pipeline.yaml beautify.params 覆盖影响）。
+# FR9 旧基线已移至 profiles/legacy.yaml（全部美化关闭，供等价回归）。
+# 注意：builtin: true 的文件禁止覆盖/删除（ProfileManager 只读保护）。
+schema_version: 1
+profile:
+  name: default
+  description: "新权威基线：基本美化全开（use_net_name/GND 聚类+分布/布线简化/并联/标签绑定/三段式）"
+  builtin: true
+  plugins:
+    input:    [dsn]
+    match:    [exact, fuzzy, passive, fallback]
+    beautify: []  # DSN 直通，布线美化已归档
+    output:   [csa, con, xcon, csv, cpc, cpm, cds_lib]
+    test:     [unit, e2e, qa_package]
+  params:
+    routing:
+      mode: p0
+      stub_lead: 100
+      lead_differentiate: true
+      lead_diff_min_gap: 75
+      max_detour: 50
+      edge_clearance: 100
+      three_stage_stub: true
+      stub_always_lead: true    # Phase XXVII：所有 stub 先延伸再拐弯
+    text_layout:
+      enabled: true             # Phase XXVII：标签避让/对齐默认开
+      align_net_names: true
+      align_ports: true
+      diff_pair_pn: true
+      char_width_factor: 0.65
+      line_height_factor: 1.2
+      padding: 12
+      min_text_w: 75
+    overlap:
+      check: true               # Phase XXVII：防重叠检测默认开
+      min_area: 625
+      auto_placement: false
+      resolve: true
+      avoid_margin: 50
+      edge_clearance: 100
+      pin_avoid_radius: 50
+      pin_avoid: true           # Phase XXVII：避让区=边框+引脚+外延默认开
+    ioport:
+      edge_layout: true         # Phase XXVII：IO port 不得堆右上角
+      edge_x: -600
+      edge_step: 100
+      edge_margin: 300
+      audit: false
+      skip_orphan: false
+      manual_names: {}
+      use_net_name: true        # Phase XXVII：网络名替代 IO port（用户 D2/A1）
+      net_label_on_end: true
+      un_name_policy: "rename"
+    gnd_distribution:
+      enabled: true             # Phase XXVII：GND 聚类+分布默认开
+      distribute_density: true
+      near_chip_offset: 100
+      distance_threshold: 2000
+      max_per_chip: 1
+      dense_area_threshold: 8
+      cluster_radius: 2000
+      parallel_short: true
+      parallel_short_dist: 1000
+      gnd_power_lastpin_offset: [0, 50]
+    wire_simplify:
+      enabled: true             # Phase XXVII：布线简化默认开
+      dot_merge: 50
+      max_wire_len: 5000
+      break_long: false         # 双端标签逻辑已删除（A2），字段保留兼容
+      self_intersect_check: true
+      parallel_short: true
+      parallel_short_dist: 1000 # Phase XXVII：500→1000（信号端并联更积极）
+    placement:
+      max_passive_move: 200
+      rotate_passives: false    # deprecated（V2）
+      sym2_switch: true
+      label_rotation_bind: true # Phase XXVII：$PN/SIG_NAME 标签随元件旋转（V3）
+    report:
+      always_write: true
+      aesthetic: true
+      ioport_audit: true
