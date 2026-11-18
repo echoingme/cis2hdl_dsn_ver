@@ -16,11 +16,14 @@ synthetic frames and the fixtures in `tests/fixtures/`.
 ## Before opening a pull request
 
 ```bash
-ruff check .
-mypy cis2hdl
 pytest tests/unit -q
 python scripts/check_config.py
+ruff check cis2hdl                # lint (not yet clean repository-wide)
+mypy cis2hdl                      # strict typing on the package
 ```
+
+The test suite and the configuration check must pass; lint and typing are expected to be clean
+for the files you touch.
 
 If your change touches output formats or wiring, also run the end-to-end layer, and if you
 have a reference design available, run with `CIS2HDL_DSN_ROOT` set to include the

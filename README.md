@@ -154,6 +154,9 @@ The suite splits by what it needs:
   containing `<design>.DSN` together with its `.EXP` / `.CSV` exports — that board is
   third-party data and is not redistributed here.
 
+CI runs the unit layer plus a configuration check on Linux ([workflow](.github/workflows/ci.yml));
+the reference-board tests need the third-party design and run locally.
+
 ## Compatibility and limitations
 
 - **Python 3.12+**, developed on Windows where Cadence lives. The converter is
