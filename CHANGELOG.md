@@ -26,6 +26,14 @@ All notable changes to this project are documented here. The format follows
   `tests/support.py` and the `CIS2HDL_DSN_ROOT` environment variable, so the suite runs from a
   fresh clone and skips (rather than fails) without the third-party design.
 
+### Removed
+
+- The Cadence reference HDL library (`tests/fixtures/hdl_lib/`, ~5,500 files, 49 MB) is no
+  longer distributed and is git-ignored; no test in this repository depends on it.
+- OrCAD artefacts carried in with the design export: `.DSNlck` / `.OLBlck` lock files,
+  `_0.DBK` database backup, `error.txt`, `pxlBA.txt`, `test.BOM`, and a 2 MB `entire.csv`
+  export that no test reads.
+
 ### Changed
 
 - Package version unified: runtime `__version__` and distribution metadata now agree

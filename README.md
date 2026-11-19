@@ -149,6 +149,9 @@ The suite splits by what it needs:
 
 - **Design-independent tests** run anywhere: parsers against synthetic frames, matchers,
   writers, configuration, CLI and plugin contracts.
+- **Reference-library tests** need a Cadence HDL symbol library under
+  `tests/fixtures/hdl_lib/`. It is not distributed and the path is git-ignored, so the tests
+  that use it are skipped in a clean checkout.
 - **Reference-board tests** parse a real 24-page design and assert frame counts, geometry and
   golden-comparison results. They skip unless `CIS2HDL_DSN_ROOT` points at a directory
   containing `<design>.DSN` together with its `.EXP` / `.CSV` exports — that board is
