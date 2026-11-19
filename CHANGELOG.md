@@ -28,9 +28,12 @@ All notable changes to this project are documented here. The format follows
 
 ### Removed
 
-- The Cadence reference HDL library (`tests/fixtures/hdl_lib/`, ~5,500 files, 49 MB) is no
-  longer distributed and is git-ignored; no test in this repository depends on it.
-- OrCAD artefacts carried in with the design export: `.DSNlck` / `.OLBlck` lock files,
+- **All design data left the repository.** `tests/fixtures/` is now empty and git-ignored: the
+  Cadence reference HDL library (~5,500 files, 49 MB), the reference board project
+  (`HG5015test/`: DSN, EDF, EXP, BOM, PST netlists, library, OrCAD project), the demo netlists
+  (`RTL8367RB-*.DSN/.EDF`) and the OLB library. Tests that measure real conversions skip when
+  the directory is absent.
+- OrCAD working files carried in with the design export: `.DSNlck` / `.OLBlck` lock files,
   `_0.DBK` database backup, `error.txt`, `pxlBA.txt`, `test.BOM`, and a 2 MB `entire.csv`
   export that no test reads.
 

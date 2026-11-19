@@ -5,7 +5,7 @@ binary `.dsn` as the single source of truth.**
 
 [![Python](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-544%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-531%20passing-brightgreen.svg)](tests/)
 [![Status](https://img.shields.io/badge/status-v1.1.0-orange.svg)](CHANGELOG.md)
 
 CIS2HDL reads a Capture CIS design, resolves every component against a Cadence Design Entry
@@ -65,7 +65,7 @@ Measured against a 24-page industrial board (the design itself is not redistribu
 | Golden comparison (components / pins / nets) | all passed |
 | Emitted project | 83 files, 0 errors |
 | Generated mock library | 191 cells, 0 empty pins |
-| Local test run | 544 passing; 185 reference-board tests skip without the design |
+| Local test run | 531 passing; 198 tests need third-party design data and skip without it |
 
 ## Installation
 
@@ -133,7 +133,7 @@ cis2hdl/
 │   ├── plugins/             # input · match · beautify · output · test stages
 │   └── gui/                 # PySide6 workbench
 ├── profiles/                # default · fast · match-only · max-beauty · debug
-├── tests/                   # unit · e2e · fixtures · support helpers
+├── tests/                   # unit · e2e · support helpers
 ├── docs/                    # architecture and matching documentation
 └── pipeline.yaml            # authoritative configuration
 ```
@@ -141,21 +141,22 @@ cis2hdl/
 ## Testing
 
 ```bash
-pytest tests -q                               # 544 tests, no external data required
-CIS2HDL_DSN_ROOT=/path/to/design pytest -q    # adds the 185 reference-board tests
+pytest tests -q                               # 531 tests, no external data required
+CIS2HDL_DSN_ROOT=/path/to/design pytest -q    # adds the 198 design-dependent tests
 ```
 
 The suite splits by what it needs:
 
 - **Design-independent tests** run anywhere: parsers against synthetic frames, matchers,
   writers, configuration, CLI and plugin contracts.
-- **Reference-library tests** need a Cadence HDL symbol library under
-  `tests/fixtures/hdl_lib/`. It is not distributed and the path is git-ignored, so the tests
-  that use it are skipped in a clean checkout.
 - **Reference-board tests** parse a real 24-page design and assert frame counts, geometry and
   golden-comparison results. They skip unless `CIS2HDL_DSN_ROOT` points at a directory
   containing `<design>.DSN` together with its `.EXP` / `.CSV` exports — that board is
   third-party data and is not redistributed here.
+- **Reference-library tests** need a Cadence HDL symbol library under
+  `tests/fixtures/hdl_lib/`, likewise not distributed.
+
+`tests/fixtures/` is git-ignored and empty in a clean clone.
 
 CI runs the unit layer plus a configuration check on Linux ([workflow](.github/workflows/ci.yml));
 the reference-board tests need the third-party design and run locally.

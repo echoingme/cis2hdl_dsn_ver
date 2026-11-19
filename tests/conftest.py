@@ -26,32 +26,55 @@ if TYPE_CHECKING:
     from collections.abc import Generator
 
 
-#: Module-level path attributes that mark a test module as design-dependent.
+FIXTURES_DIR = Path(__file__).parent / "fixtures"
+
+#: Design files (DSN/EDF/OLB) are third-party board data and are not distributed.
+UNAVAILABLE_REASON = "design fixtures not distributed (tests/fixtures is empty in a clean clone)"
+
+
+def _missing_fixture_path(module: object) -> Path | None:
+    """Return the first module-level Path under ``tests/fixtures`` that is absent.
+
+    Modules declare the design they need as constants (``DSN_PATH``,
+    ``EXP_PATH``, ``HDL_LIB``, …); checking module-level Path values covers
+    all of them without parsing source text.
+    """
+    for value in vars(module).values():
+        if not isinstance(value, Path):
+            continue
+        if FIXTURES_DIR in value.parents and not value.exists():
+            return value
+    return None
+
+
+#: Module-level attributes that point at the reference design (see tests/support.py).
 DESIGN_ATTRS = ("DSN_PATH", "EXP_PATH", "CSV_PATH", "QA_PATH")
 
 
-def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
-    """Skip tests whose reference-design inputs are not present.
+def _missing_design_path(module: object) -> Path | None:
+    """Return the first declared design path (``DSN_PATH`` …) that is absent."""
+    for attr in DESIGN_ATTRS:
+        value = getattr(module, attr, None)
+        if value is not None and not Path(value).exists():
+            return Path(value)
+    return None
 
-    Modules declare the files they need as ``DSN_PATH`` / ``EXP_PATH`` /
-    ``CSV_PATH`` / ``QA_PATH``. When any of those files is missing — which is
-    the case in a fresh clone, because the reference board is a third-party
-    design — the module's tests are skipped instead of failing. Set
-    ``CIS2HDL_DSN_ROOT`` to point at the design directory to enable them.
-    """
+
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
+    """Skip tests whose design fixtures are not present."""
     for item in items:
         module = getattr(item, "module", None)
         if module is None:
             continue
-        for attr in DESIGN_ATTRS:
-            value = getattr(module, attr, None)
-            if value is None:
-                continue
-            if not Path(value).exists():
-                item.add_marker(
-                    pytest.mark.skip(f"reference design file not available: {Path(value).name}")
-                )
-                break
+        if _missing_fixture_path(module) or _missing_design_path(module):
+            item.add_marker(pytest.mark.skip(UNAVAILABLE_REASON))
+
+
+def _require(path: Path) -> Path:
+    """Return ``path``, skipping the calling test when the fixture is absent."""
+    if not path.exists():
+        pytest.skip(f"{UNAVAILABLE_REASON}: {path.name}")
+    return path
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -68,43 +91,43 @@ def fixtures_dir() -> Path:
 @pytest.fixture(scope="session")
 def simple_dsn_path(fixtures_dir: Path) -> Path:
     """Path to a minimal DSN fixture (dff_sync_sr.dsn) — 1 page, ~2 instances."""
-    return fixtures_dir / "dff_sync_sr.dsn"
+    return _require(fixtures_dir / "dff_sync_sr.dsn")
 
 
 @pytest.fixture(scope="session")
 def real_dsn_path(fixtures_dir: Path) -> Path:
     """Path to a real-world RTL8367RB DSN fixture (6 pages, ~12+ instances)."""
-    return fixtures_dir / "RTL8367RB-VC-DEMO-LQFP128EP-P4L-V1_0.DSN"
+    return _require(fixtures_dir / "RTL8367RB-VC-DEMO-LQFP128EP-P4L-V1_0.DSN")
 
 
 @pytest.fixture(scope="session")
 def real_edf_path(fixtures_dir: Path) -> Path:
     """Path to the EDIF export of the RTL8367RB project."""
-    return fixtures_dir / "RTL8367RB-VC-DEMO-LQFP128EP-P4L-V1_0.EDF"
+    return _require(fixtures_dir / "RTL8367RB-VC-DEMO-LQFP128EP-P4L-V1_0.EDF")
 
 
 @pytest.fixture(scope="session")
 def real_olb_path(fixtures_dir: Path) -> Path:
     """Path to the OLB component library fixture."""
-    return fixtures_dir / "LIBRARY2CLEAN.OLB"
+    return _require(fixtures_dir / "LIBRARY2CLEAN.OLB")
 
 
 @pytest.fixture(scope="session")
 def hdl_lib_dir(fixtures_dir: Path) -> Path:
     """Path to the HDL component library directory used for matching."""
-    return fixtures_dir / "hdl_lib"
+    return _require(fixtures_dir / "hdl_lib")
 
 
 @pytest.fixture(scope="session")
 def corrupted_dsn_truncated(fixtures_dir: Path) -> Path:
     """Path to a DSN file truncated mid-stream (corruption test fixture)."""
-    return fixtures_dir / "RTL8367RB-CORRUPTED-TRUNCATED.DSN"
+    return _require(fixtures_dir / "RTL8367RB-CORRUPTED-TRUNCATED.DSN")
 
 
 @pytest.fixture(scope="session")
 def corrupted_dsn_sector(fixtures_dir: Path) -> Path:
     """Path to a DSN file with a corrupted sector (corruption test fixture)."""
-    return fixtures_dir / "RTL8367RB-CORRUPTED-SECTOR.DSN"
+    return _require(fixtures_dir / "RTL8367RB-CORRUPTED-SECTOR.DSN")
 
 
 # ═══════════════════════════════════════════════════════════════════════════
